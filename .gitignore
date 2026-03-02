@@ -1,0 +1,16 @@
+# PySR run outputs
+outputs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# macOS
+.DS_Store
+
+# Test / scratch CSVs (keep only data.csv as an example)
+chetan*.csv
+time_series*.csv
