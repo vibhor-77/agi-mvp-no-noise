@@ -39,7 +39,7 @@ than `λ`. This operationalises Occam's Razor: prefer the shortest program
 
 Beam search over expression trees, evaluated in parallel across all CPU cores
 using Python `multiprocessing`. Good for understanding how symbolic regression
-works under the hood.
+works under the hood. Univariate only.
 
 ```bash
 python guess_function.py data.csv
@@ -59,11 +59,12 @@ python guess_function.py data.csv --beam 20 --offspring 60 --workers 10 --lam 0.
 Wraps [PySR](https://github.com/MilesCranmer/PySR) (Julia backend), which adds
 algebraic simplification and returns the full **Pareto front** — one best
 expression per complexity level, so you can see the accuracy/simplicity
-tradeoff as a table and pick the "knee".
+tradeoff as a table and pick the "knee". Supports **univariate and multivariate**
+functions — variable names are read automatically from the CSV header.
 
 **Setup (one-time):**
 ```bash
-pip install pysr
+pip install pysr numpy
 python -c "import pysr; pysr.install()"   # downloads Julia, ~2 min
 ```
 
@@ -80,7 +81,7 @@ python guess_function_pysr.py data.csv --workers 10 --iters 200 --lam 0.001
 | `--maxsize` | 20 | Max expression complexity |
 | `--lam` | 0.001 | Complexity penalty (parsimony) |
 
-**Example output:**
+**Example output (univariate):**
 ```
 Complexity  Loss       Equation
 ─────────────────────────────────────────────
@@ -95,19 +96,40 @@ Complexity  Loss       Equation
 ## Generating test data
 
 ```bash
-python make_data.py           # writes data.csv (default: sin(x²) + 2x)
+python make_data.py           # writes data.csv
 python make_data.py out.csv   # custom output path
 ```
 
-Edit `SECRET_FN` in `make_data.py` to test against any function you like.
+Edit `SECRET_FN` in `make_data.py` to change the function to discover.
+The number of input variables is **auto-detected from the function signature**
+— no other changes needed.
+
+**Single variable** (default) — output column named `x`:
+```python
+def SECRET_FN(x):
+    return math.sin(x ** 2) + 2 * x
+```
+
+**Multiple variables** — output columns named `x0, x1, ...`:
+```python
+def SECRET_FN(x0, x1):
+    return math.sin(x0 ** 2) + 2 * x0 * x1
+
+def SECRET_FN(x0, x1, x2):
+    return x0 ** 2 + math.cos(x1 * x2)
+```
+
+The generated CSV header drives everything downstream: `guess_function_pysr.py`
+reads the variable names directly from the header and passes them to PySR, so
+multivariate data works without any extra flags.
 
 ---
 
 ## Requirements
 
-**Scratch version:** Python 3.8+, no dependencies beyond stdlib.
+**Scratch version (`guess_function.py`):** Python 3.8+, stdlib only.
 
-**PySR version:** Python 3.8+, plus:
+**PySR version (`guess_function_pysr.py`):** Python 3.8+, plus:
 ```bash
 pip install pysr numpy
 ```

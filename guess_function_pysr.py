@@ -42,19 +42,21 @@ def parse_args():
 def load_csv(path):
     with open(path) as f:
         reader = csv.reader(f)
-        next(reader)
-        rows = [(float(r[0]), float(r[1])) for r in reader]
-    xs = np.array([[r[0]] for r in rows])   # PySR expects shape (n, features)
-    ys = np.array([r[1] for r in rows])
-    return xs, ys
+        header = next(reader)
+        rows   = [list(map(float, r)) for r in reader]
+    var_names = header[:-1]           # everything except the last column ('y')
+    X = np.array([[r[i] for i in range(len(var_names))] for r in rows])
+    y = np.array([r[-1] for r in rows])
+    return X, y, var_names
 
 # ── Main ───────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
-    args    = parse_args()
-    X, y    = load_csv(args.csv)
+    args            = parse_args()
+    X, y, var_names = load_csv(args.csv)
 
-    print(f"Loaded {len(y)} points from '{args.csv}'")
+    print(f"Loaded {len(y)} points from '{args.csv}'  "
+          f"(variables: {var_names})")
     print(f"workers={args.workers}  iters={args.iters}  "
           f"maxsize={args.maxsize}  λ={args.lam}\n")
 
@@ -78,7 +80,7 @@ if __name__ == '__main__':
         progress          = True,
     )
 
-    model.fit(X, y, variable_names=["x"])
+    model.fit(X, y, variable_names=var_names)
 
     # PySR returns the full Pareto front — best expression at each complexity level
     print("\n" + "═" * 65)
